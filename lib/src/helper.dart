@@ -257,4 +257,27 @@ class Helper {
           'requestCapturePermission only support for Android/macOS');
     }
   }
+
+  /// Enable AI Agent Mode (Android WebRTC audio injection/extraction)
+  static Future<void> enableAiAgentMode() async {
+    if (WebRTC.platformIsAndroid) {
+      await WebRTC.invokeMethod('enableAiAgent');
+    }
+  }
+
+  /// Disable AI Agent Mode
+  static Future<void> disableAiAgentMode() async {
+    if (WebRTC.platformIsAndroid) {
+      await WebRTC.invokeMethod('disableAiAgent');
+    }
+  }
+
+  /// Injects an audio file (WAV, MP3, AAC, M4A, OGG) directly into the outgoing WebRTC call.
+  static Future<void> playAudioFile(String filePath) async {
+    if (WebRTC.platformIsAndroid) {
+      await WebRTC.invokeMethod('playAudioFile', <String, dynamic>{
+        'path': filePath,
+      });
+    }
+  }
 }

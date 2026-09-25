@@ -25,6 +25,7 @@ import androidx.annotation.RequiresApi;
 
 import com.cloudwebrtc.webrtc.audio.AudioDeviceKind;
 import com.cloudwebrtc.webrtc.audio.AudioProcessingController;
+import com.cloudwebrtc.webrtc.audio.AiAgentAudioProcessor;
 import com.cloudwebrtc.webrtc.audio.AudioSwitchManager;
 import com.cloudwebrtc.webrtc.audio.AudioUtils;
 import com.cloudwebrtc.webrtc.audio.LocalAudioTrack;
@@ -145,6 +146,7 @@ public class MethodCallHandlerImpl implements MethodCallHandler, StateProvider {
   private CustomVideoDecoderFactory videoDecoderFactory;
 
   public AudioProcessingController audioProcessingController;
+  public AiAgentAudioProcessor aiAgentAudioProcessor;
 
   // WARP (WebRTC Abridged Roundtrip Protocol, draft-uberti-tsvwg-warp) is opted
   // into through the `enableWARP` initialize() option. The part of it that
@@ -183,6 +185,7 @@ public class MethodCallHandlerImpl implements MethodCallHandler, StateProvider {
     this.context = context;
     this.textures = textureRegistry;
     this.messenger = messenger;
+    this.aiAgentAudioProcessor = new AiAgentAudioProcessor(messenger);
   }
 
   static private void resultError(String method, String error, Result result) {
@@ -401,6 +404,8 @@ public class MethodCallHandlerImpl implements MethodCallHandler, StateProvider {
     videoEncoderFactory.setForceSWCodecList(forceSWCodecList);
 
     audioProcessingController = new AudioProcessingController();
+    audioProcessingController.capturePostProcessing.addProcessor(aiAgentAudioProcessor.captureProcessor);
+    audioProcessingController.renderPreProcessing.addProcessor(aiAgentAudioProcessor.renderProcessor);
 
     factoryBuilder.setAudioProcessingFactory(audioProcessingController.externalAudioProcessingFactory);
 
@@ -415,6 +420,26 @@ public class MethodCallHandlerImpl implements MethodCallHandler, StateProvider {
 
     final AnyThreadResult result = new AnyThreadResult(notSafeResult);
     switch (call.method) {
+      case "enableAiAgent": {
+        aiAgentAudioProcessor.enable();
+        result.success(null);
+        break;
+      }
+      case "disableAiAgent": {
+        aiAgentAudioProcessor.disable();
+        result.success(null);
+        break;
+      }
+      case "playAudioFile": {
+        String path = call.argument("path");
+        if (path != null) {
+          aiAgentAudioProcessor.playAudioFile(path);
+          result.success(null);
+        } else {
+          result.error("INVALID_ARG", "Audio file path is null", null);
+        }
+        break;
+      }
       case "initialize": {
         int networkIgnoreMask = Options.ADAPTER_TYPE_UNKNOWN;
         Map<String, Object> options = call.argument("options");
